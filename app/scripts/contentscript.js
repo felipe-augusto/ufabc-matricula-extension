@@ -34,7 +34,9 @@ if (process.env.NODE_ENV == 'production') {
     'ufabc-matricula-test.cdd.naoseiprogramar.com.br/snapshot',
     'ufabc-matricula-test.cdd.naoseiprogramar.com.br/snapshot/backup.html',
     'locahost:8011/snapshot',
-    'locahost:8011/snapshot/backup.html'
+    'locahost:8011/snapshot/backup.html',
+    'matriculas.felipecoder.com/snapshot',
+    'matriculas.felipecoder.com/snapshot/backup.html',
   ]
 }
 

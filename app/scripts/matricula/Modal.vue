@@ -5,6 +5,7 @@
     :visible="value.dialog"
     light
     width="720px"
+    top="2vh"
     class="ufabc-element-dialog">
     <div v-loading="loading"
       element-loading="Carregando">
@@ -47,7 +48,27 @@
       <!-- subtitle -->
       <div class="border mb-2 pa-2">
           <div class="mb-2">Legenda</div>
-        <div class="ufabc-row" style="justify-content: space-between;">
+        <div v-if="isReajuste" class="ufabc-row" style="justify-content: space-between;">
+          <!-- You-->
+          <div class="ufabc-row ufabc-align-center">
+            <div class="aluno mr-1" style="width: 12px; height: 12px;">
+            </div>
+            <span>Você</span>
+          </div>
+          <!-- kicked-->
+          <div class="ufabc-row ufabc-align-center">
+            <div class="kicked mr-1" style="width: 12px; height: 12px;">
+            </div>
+            <span>Foi chutado</span>
+          </div>
+          <!-- not-kicked-->
+          <div class="ufabc-row ufabc-align-center">
+            <div class="not-kicked mr-1" style="width: 12px; height: 12px;">
+            </div>
+            <span>Não foi chutado</span>
+          </div>
+        </div>
+        <div v-else class="ufabc-row" style="justify-content: space-between;">
           <!-- You-->
           <div class="ufabc-row ufabc-align-center">
             <div class="aluno mr-1" style="width: 12px; height: 12px;">
@@ -77,7 +98,7 @@
       <!-- Table -->
       <el-table
         :data="transformed"
-        max-height="250"
+        height="50vh"
         style="width: 100%"
         empty-text="Não há dados"
         :row-class-name="tableRowClassName"
@@ -133,6 +154,7 @@
       return {
         loading: false,
         disciplina: {},
+        isReajuste: false,
 
         headers: [],
 
@@ -213,6 +235,7 @@
         Api.get(`/disciplinas/${corteId}/kicks?aluno_id=${aluno_id}`).then((res) => {
           this.kicksData = res
           this.resort()
+          this.verifyReajuste()
           this.loading = false
         }).catch((e) => {
           this.loading = false
@@ -226,6 +249,12 @@
         })
       },
 
+      verifyReajuste() {
+        this.isReajuste = this.kicksData.some((student) => {
+          return 'kicked' in student
+        })
+      },
+
       resort(e) {
         const sortOrder = _.map(this.headers, 'value')
         const sortRef = Array(sortOrder.length || 0).fill('desc')
@@ -235,7 +264,7 @@
           sortRef[turnoIndex] = (this.parsedDisciplina.turno == 'diurno') ? 'asc' : 'desc'
         }
 
-        this.kicksData = _.orderBy(this.kicksData, sortOrder, sortRef)
+        this.kicksData = _.uniqBy(_.orderBy(this.kicksData, sortOrder, sortRef), 'aluno_id')
       },
 
       removedFilter(value) {
@@ -252,29 +281,48 @@
         this.value.dialog = false
       },
 
-      // kickStatus(rowIndex) {
-      //   console.log("rowIndex", rowIndex)
-      //   console.log("this.computeKicksForecast", this.computeKicksForecast)
-      //   if(rowIndex <= this.computeKicksForecast) {
-      //     return 'not-kicked'
-      //   }else if(rowIndex >= this.disciplina.vagas){
-      //     return 'kicked'
-      //   }else {
-      //     return 'probably-kicked'
-      //   }
-      // },
-
       tableRowClassName({row, rowIndex}) {
-        if (row.aluno_id == MatriculaHelper.getAlunoId()) {
-          return 'aluno-row'
-        } else if(rowIndex <= this.computeKicksForecast) {
-          return 'not-kicked-row'
-        }else if(rowIndex >= this.disciplina.vagas){
-          return 'kicked-row'
-        }else {
-          return 'probably-kicked-row'
+        if(this.isReajuste) {
+          return this.computeReajusteKicksClass(row, rowIndex)
+        } else {
+          return this.computeKicksClass(row, rowIndex)
         }
-      }
+      },
+
+      computeReajusteKicksClass(row, rowIndex) {
+        let rowClass = ''
+
+        if (row.aluno_id == MatriculaHelper.getAlunoId()) {
+          rowClass = rowClass + 'aluno-row '
+        }
+        
+        if(_.get(row, 'kicked', false)){
+          rowClass = rowClass + 'kicked-row '
+          return rowClass
+        } else if(!_.get(row, 'kicked', true)) {
+          rowClass = rowClass + 'not-kicked-row '
+          return rowClass
+        }
+      },
+
+      computeKicksClass(row, rowIndex) {
+        let rowClass = ''
+
+        if (row.aluno_id == MatriculaHelper.getAlunoId()) {
+          rowClass = rowClass + 'aluno-row '
+        } 
+        
+        if(rowIndex <= this.computeKicksForecast) {
+          rowClass = rowClass + 'not-kicked-row '
+          return rowClass
+        }else if(rowIndex >= this.disciplina.vagas){
+          rowClass = rowClass + 'kicked-row '
+          return rowClass
+        }else {
+          rowClass = rowClass + 'probably-kicked-row '
+          return rowClass
+        }
+      },
     },
   }
 </script>
